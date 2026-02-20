@@ -1,0 +1,4 @@
+[tools]
+golangci-lint = "2.8.0"
+go = "1.23.5"
+opencode = "1.1.63"

@@ -27,3 +27,8 @@
 
 !.devcontainer/
 !.devcontainer/*.json
+
+
+!.editorconfig
+!mise.toml
+!Makefile
