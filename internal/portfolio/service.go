@@ -30,9 +30,13 @@ func (r *BalanceReport) Format() string {
 	var sb strings.Builder
 	sb.WriteString("📊 *Portfolio Balance*\n\n")
 	for _, h := range r.Holdings {
+		pct := 0.0
+		if r.TotalUSD > 0 {
+			pct = h.Value / r.TotalUSD * 100
+		}
 		sb.WriteString(fmt.Sprintf(
-			"*%s* (%s)\n  %.4f shares × $%.2f = *$%.2f*\n",
-			h.Symbol, h.Name, h.Shares, h.Price, h.Value,
+			"*%s* (%s)\n  %.4f shares × $%.2f = *$%.2f* (%.1f%%)\n",
+			h.Symbol, h.Name, h.Shares, h.Price, h.Value, pct,
 		))
 	}
 	sb.WriteString(fmt.Sprintf("\n💰 *Total: $%.2f*", r.TotalUSD))
