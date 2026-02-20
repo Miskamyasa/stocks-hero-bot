@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -75,6 +76,26 @@ func (s *Scheduler) notifyAll(ctx context.Context) {
 		if report == nil || len(report.Holdings) == 0 {
 			continue
 		}
-		s.notifier.SendMarkdown(chatID, report.Format())
+
+		text := report.Format()
+
+		// Append % change vs previous report if one exists.
+		prev, err := repo.GetLastReport(chatID)
+		if err != nil {
+			log.Printf("scheduler: get last report %d: %v", chatID, err)
+		} else if prev > 0 {
+			change := (report.TotalUSD - prev) / prev * 100
+			sign := "+"
+			if change < 0 {
+				sign = ""
+			}
+			text += fmt.Sprintf("\n📈 *Change since last report: %s%.2f%%*", sign, change)
+		}
+
+		s.notifier.SendMarkdown(chatID, text)
+
+		if err := repo.SaveReport(chatID, report.TotalUSD); err != nil {
+			log.Printf("scheduler: save report %d: %v", chatID, err)
+		}
 	}
 }

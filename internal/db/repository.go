@@ -117,6 +117,30 @@ func (r *Repository) GetAllActiveUsers() ([]int64, error) {
 	return ids, rows.Err()
 }
 
+// SaveReport records a balance report in the history table.
+func (r *Repository) SaveReport(chatID int64, totalUSD float64) error {
+	_, err := r.db.Exec(`
+		INSERT INTO history (chat_id, total_usd) VALUES (?, ?)`,
+		chatID, totalUSD,
+	)
+	return err
+}
+
+// GetLastReport returns the most recent historical total for a user.
+// Returns 0, nil if no previous report exists.
+func (r *Repository) GetLastReport(chatID int64) (float64, error) {
+	var total float64
+	err := r.db.QueryRow(`
+		SELECT total_usd FROM history
+		WHERE chat_id = ?
+		ORDER BY reported_at DESC
+		LIMIT 1`, chatID).Scan(&total)
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	return total, err
+}
+
 // GetDistinctSymbols returns all unique ticker symbols across all users.
 func (r *Repository) GetDistinctSymbols() ([]string, error) {
 	rows, err := r.db.Query(`

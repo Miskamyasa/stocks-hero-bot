@@ -27,6 +27,15 @@ CREATE TABLE IF NOT EXISTS holdings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_holdings_chat ON holdings(chat_id);
+
+CREATE TABLE IF NOT EXISTS history (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    chat_id     INTEGER NOT NULL REFERENCES users(chat_id),
+    total_usd   REAL NOT NULL,
+    reported_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_history_chat ON history(chat_id);
 `
 
 // DB wraps a sql.DB with SQLite-specific setup.
