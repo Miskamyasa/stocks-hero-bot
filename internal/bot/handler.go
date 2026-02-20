@@ -23,6 +23,12 @@ Here's what I can do:
 • Tell me how many shares you own
 • I'll track prices and notify you every hour with your total balance
 
+Commands:
+• /b — Show total balance
+• /p — Show full portfolio details
+• /r — Remove a holding
+• /h — Show usage instructions
+
 Let's start — send me a ticker symbol or company name!`
 
 // Handler processes Telegram messages and callbacks using a per-user FSM.
@@ -106,6 +112,9 @@ func (h *Handler) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 		h.sendText(chatID, welcomeText)
 
 	case "b":
+		h.handleBalance(ctx, chatID)
+
+	case "p":
 		h.handlePortfolio(ctx, chatID)
 
 	case "r":
@@ -115,8 +124,22 @@ func (h *Handler) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 		h.sendText(chatID, welcomeText)
 
 	default:
-		h.sendText(chatID, "Unknown command. Use /b, /r, or /h.")
+		h.sendText(chatID, "Unknown command. Use /b, /p, /r, or /h.")
 	}
+}
+
+func (h *Handler) handleBalance(ctx context.Context, chatID int64) {
+	report, err := h.svc.ComputeBalance(ctx, chatID)
+	if err != nil {
+		log.Printf("compute balance %d: %v", chatID, err)
+		h.sendText(chatID, "Failed to fetch prices. Please try again later.")
+		return
+	}
+	if report == nil || len(report.Holdings) == 0 {
+		h.sendText(chatID, "Your portfolio is empty. Send me a ticker symbol to get started!")
+		return
+	}
+	h.sendMarkdown(chatID, report.FormatSummary())
 }
 
 func (h *Handler) handlePortfolio(ctx context.Context, chatID int64) {

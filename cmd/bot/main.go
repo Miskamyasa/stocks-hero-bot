@@ -67,7 +67,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("db init: %v", err)
 	}
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	priceCache := finance.NewPriceCache(cfg.CacheTTL)
 	yahooClient := finance.NewYahooClient(priceCache)

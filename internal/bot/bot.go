@@ -18,7 +18,8 @@ type Bot struct {
 
 // botCommands is the list registered with Telegram so they appear in the menu.
 var botCommands = []tgbotapi.BotCommand{
-	{Command: "b", Description: "Show current holdings and total balance"},
+	{Command: "b", Description: "Show total balance"},
+	{Command: "p", Description: "Show full portfolio details"},
 	{Command: "r", Description: "Remove a holding from your portfolio"},
 	{Command: "h", Description: "Show usage instructions"},
 	{Command: "start", Description: "Welcome message and reset state"},

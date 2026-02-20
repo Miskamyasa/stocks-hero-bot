@@ -77,13 +77,22 @@ func (s *Scheduler) notifyAll(ctx context.Context) {
 			continue
 		}
 
-		text := report.Format()
-
-		// Append % change vs previous report if one exists.
+		// Fetch previous report to detect changes.
 		prev, err := repo.GetLastReport(chatID)
 		if err != nil {
 			log.Printf("scheduler: get last report %d: %v", chatID, err)
-		} else if prev > 0 {
+		}
+
+		// Skip sending and saving if the total hasn't changed.
+		if prev > 0 && report.TotalUSD == prev {
+			log.Printf("scheduler: skip report for %d (no change: $%.2f)", chatID, prev)
+			continue
+		}
+
+		text := report.FormatSummary()
+
+		// Append % change vs previous report if one exists.
+		if prev > 0 {
 			change := (report.TotalUSD - prev) / prev * 100
 			sign := "+"
 			if change < 0 {

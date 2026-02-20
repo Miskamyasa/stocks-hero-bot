@@ -7,11 +7,11 @@ import (
 
 // Holding represents a single portfolio position.
 type Holding struct {
-	ID      int64
-	ChatID  int64
-	Symbol  string
-	Name    string
-	Shares  float64
+	ID     int64
+	ChatID int64
+	Symbol string
+	Name   string
+	Shares float64
 }
 
 // Repository provides CRUD operations for users and holdings.
@@ -77,7 +77,7 @@ func (r *Repository) GetHoldings(chatID int64) ([]Holding, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var holdings []Holding
 	for rows.Next() {
@@ -104,7 +104,7 @@ func (r *Repository) GetAllActiveUsers() ([]int64, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var ids []int64
 	for rows.Next() {
@@ -148,7 +148,7 @@ func (r *Repository) GetDistinctSymbols() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query distinct symbols: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var symbols []string
 	for rows.Next() {

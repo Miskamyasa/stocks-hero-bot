@@ -1,0 +1,7 @@
+[tools]
+golangci-lint = "2.10.1"
+go = "1.23.6"
+"aqua:opencode" = "1.1.63"
+
+[settings]
+lockfile = true
