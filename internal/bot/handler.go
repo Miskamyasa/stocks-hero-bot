@@ -105,17 +105,17 @@ func (h *Handler) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 		_ = h.repo.SetUserState(chatID, "idle", "")
 		h.sendText(chatID, welcomeText)
 
-	case "portfolio":
+	case "b":
 		h.handlePortfolio(ctx, chatID)
 
-	case "remove":
+	case "r":
 		h.handleRemoveMenu(ctx, chatID)
 
-	case "help":
+	case "h":
 		h.sendText(chatID, welcomeText)
 
 	default:
-		h.sendText(chatID, "Unknown command. Use /portfolio, /remove, or /help.")
+		h.sendText(chatID, "Unknown command. Use /b, /r, or /h.")
 	}
 }
 
@@ -258,7 +258,7 @@ func (h *Handler) handleSharesInput(ctx context.Context, chatID int64, text, sta
 	}
 
 	h.sendText(chatID, fmt.Sprintf(
-		"✅ Saved: %.4f shares of %s (%s).\n\nSend another ticker to add more, or /portfolio to see your balance.",
+		"✅ Saved: %.4f shares of %s (%s).\n\nSend another ticker to add more, or /b to see your balance.",
 		shares, pending.Symbol, pending.Name,
 	))
 }
