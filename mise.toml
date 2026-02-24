@@ -1,6 +1,4 @@
 [tools]
 golangci-lint = "2.10.1"
 go = "1.23.6"
-node = "22.21.1"
-npm = "11.8.0"
-"npm:opencode-ai" = "1.2.10"
+opencode = "1.2.10"
