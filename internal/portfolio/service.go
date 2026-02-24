@@ -34,13 +34,18 @@ func (r *BalanceReport) Format() string {
 		if r.TotalUSD > 0 {
 			pct = h.Value / r.TotalUSD * 100
 		}
-		sb.WriteString(fmt.Sprintf(
+		fmt.Fprintf(&sb,
 			"*%s* (%s)\n  %.4f shares × $%.2f = *$%.2f* (%.1f%%)\n",
 			h.Symbol, h.Name, h.Shares, h.Price, h.Value, pct,
-		))
+		)
 	}
-	sb.WriteString(fmt.Sprintf("\n💰 *Total: $%.2f*", r.TotalUSD))
+	fmt.Fprintf(&sb, "\n💰 *Total: $%.2f*", r.TotalUSD)
 	return sb.String()
+}
+
+// FormatSummary returns only the total balance line in Markdown format.
+func (r *BalanceReport) FormatSummary() string {
+	return fmt.Sprintf("💰 *Total: $%.2f*", r.TotalUSD)
 }
 
 // Service implements portfolio business logic.

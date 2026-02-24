@@ -103,7 +103,7 @@ func (yc *YahooClient) fetchNewSession(ctx context.Context) (*yahooSession, erro
 	if err != nil {
 		return nil, fmt.Errorf("consent request: %w", err)
 	}
-	defer consentResp.Body.Close()
+	defer func() { _ = consentResp.Body.Close() }()
 	_, _ = io.ReadAll(consentResp.Body) // drain
 
 	cookie := extractCookies(consentResp)
@@ -123,7 +123,7 @@ func (yc *YahooClient) fetchNewSession(ctx context.Context) (*yahooSession, erro
 	if err != nil {
 		return nil, fmt.Errorf("crumb request: %w", err)
 	}
-	defer crumbResp.Body.Close()
+	defer func() { _ = crumbResp.Body.Close() }()
 
 	crumbBytes, err := io.ReadAll(crumbResp.Body)
 	if err != nil {
@@ -132,7 +132,7 @@ func (yc *YahooClient) fetchNewSession(ctx context.Context) (*yahooSession, erro
 
 	crumb := strings.TrimSpace(string(crumbBytes))
 	if crumb == "" || crumb == "null" {
-		return nil, fmt.Errorf("Yahoo returned invalid crumb: %q", crumb)
+		return nil, fmt.Errorf("yahoo returned invalid crumb: %q", crumb)
 	}
 
 	return &yahooSession{
@@ -173,7 +173,7 @@ func (yc *YahooClient) SearchTickers(ctx context.Context, query string) ([]Ticke
 	if err != nil {
 		return nil, fmt.Errorf("search request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -281,7 +281,7 @@ func (yc *YahooClient) fetchOne(ctx context.Context, symbol string, sess *yahooS
 	if err != nil {
 		return Quote{}, fmt.Errorf("chart request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		return Quote{}, fmt.Errorf("auth error: HTTP %d", resp.StatusCode)
