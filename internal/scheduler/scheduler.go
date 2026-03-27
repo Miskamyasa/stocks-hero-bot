@@ -4,10 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"time"
 
 	"stock-portfolio-bot/internal/portfolio"
 )
+
+// changeThreshold is the minimum percentage change (as a decimal) required
+// to trigger a notification. 0.0005 = 0.05%.
+const changeThreshold = 0.0005
 
 // Notifier is the interface the scheduler uses to push messages to users.
 // Implemented by *bot.Bot to avoid an import cycle.
@@ -83,10 +88,14 @@ func (s *Scheduler) notifyAll(ctx context.Context) {
 			log.Printf("scheduler: get last report %d: %v", chatID, err)
 		}
 
-		// Skip sending and saving if the total hasn't changed.
-		if prev > 0 && report.TotalUSD == prev {
-			log.Printf("scheduler: skip report for %d (no change: $%.2f)", chatID, prev)
-			continue
+		// Skip sending and saving if the change is below threshold.
+		if prev > 0 {
+			changeRatio := math.Abs(report.TotalUSD-prev) / prev
+			if changeRatio < changeThreshold {
+				log.Printf("scheduler: skip report for %d (change %.4f%% < threshold %.2f%%)",
+					chatID, changeRatio*100, changeThreshold*100)
+				continue
+			}
 		}
 
 		text := report.FormatSummary()

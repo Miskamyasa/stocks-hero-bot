@@ -32,9 +32,9 @@ func loadConfig() config {
 		cacheTTL = 15 * time.Minute
 	}
 
-	notifyInterval, err := time.ParseDuration(getEnv("NOTIFY_INTERVAL", "1h"))
+	notifyInterval, err := time.ParseDuration(getEnv("NOTIFY_INTERVAL", "30m"))
 	if err != nil {
-		notifyInterval = time.Hour
+		notifyInterval = 30 * time.Minute
 	}
 
 	return config{
