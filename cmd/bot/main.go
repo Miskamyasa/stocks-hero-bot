@@ -70,10 +70,11 @@ func main() {
 	defer func() { _ = database.Close() }()
 
 	priceCache := finance.NewPriceCache(cfg.CacheTTL)
+	rateCache := finance.NewExchangeRateCache(cfg.CacheTTL)
 	yahooClient := finance.NewYahooClient(priceCache)
 
 	repo := db.NewRepository(database)
-	svc := portfolio.NewService(repo, yahooClient)
+	svc := portfolio.NewService(repo, yahooClient, rateCache)
 
 	tgBot, err := bot.New(cfg.TelegramToken, svc, yahooClient)
 	if err != nil {

@@ -235,6 +235,77 @@ func (yc *YahooClient) GetQuotes(ctx context.Context, symbols []string) (map[str
 	return found, nil
 }
 
+// GetUSDRates returns exchange rates for the requested currencies relative to USD.
+// The returned value is how many units of each currency equal 1 USD.
+func (yc *YahooClient) GetUSDRates(ctx context.Context, currencies []string) (map[string]float64, error) {
+	rates := make(map[string]float64, len(currencies))
+	if len(currencies) == 0 {
+		return rates, nil
+	}
+
+	forexSymbols := make([]string, 0, len(currencies))
+	symbolToCurrency := make(map[string]string, len(currencies))
+	seen := make(map[string]struct{}, len(currencies))
+
+	for _, code := range currencies {
+		currency := strings.ToUpper(strings.TrimSpace(code))
+		if currency == "" {
+			return nil, fmt.Errorf("currency code cannot be empty")
+		}
+		if _, ok := seen[currency]; ok {
+			continue
+		}
+		seen[currency] = struct{}{}
+
+		if currency == "USD" {
+			rates[currency] = 1
+			continue
+		}
+
+		symbol := currency + "USD=X"
+		forexSymbols = append(forexSymbols, symbol)
+		symbolToCurrency[symbol] = currency
+	}
+
+	if len(forexSymbols) == 0 {
+		return rates, nil
+	}
+
+	quotes, err := yc.fetchBatch(ctx, forexSymbols)
+	fetchErr := err
+	var missing []string
+	for symbol, currency := range symbolToCurrency {
+		q, ok := quotes[symbol]
+		if !ok {
+			missing = append(missing, currency)
+			continue
+		}
+		if q.Price <= 0 {
+			missing = append(missing, currency)
+			continue
+		}
+
+		// Yahoo symbol <CURRENCY>USD=X is <CURRENCY>/USD, invert for USD-><CURRENCY>.
+		rates[currency] = 1 / q.Price
+	}
+
+	if fetchErr != nil || len(missing) > 0 {
+		errMsg := ""
+		if fetchErr != nil {
+			errMsg = fmt.Sprintf("fetch usd rates: %v", fetchErr)
+		}
+		if len(missing) > 0 {
+			if errMsg != "" {
+				errMsg += "; "
+			}
+			errMsg += fmt.Sprintf("missing forex quotes for currencies %v", missing)
+		}
+		return rates, fmt.Errorf(errMsg)
+	}
+
+	return rates, nil
+}
+
 // fetchBatch fetches prices for multiple symbols using the v8/chart endpoint,
 // one request per symbol (the chart endpoint is per-symbol, not batch).
 // It retries once with a fresh session on 401/403.

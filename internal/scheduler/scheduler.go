@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strings"
 	"time"
 
 	"stock-portfolio-bot/internal/portfolio"
@@ -60,12 +61,34 @@ func (s *Scheduler) notifyAll(ctx context.Context) {
 		return
 	}
 
-	if _, err := s.svc.GetQuotes(ctx, symbols); err != nil {
+	quotes, err := s.svc.GetQuotes(ctx, symbols)
+	if err != nil {
 		log.Printf("scheduler: pre-warm quotes: %v", err)
 		// Continue anyway — individual balance calls will retry.
 	}
 
-	// 2. Notify each active user (balance reads from cache → instant).
+	// 2. Pre-warm FX cache for currencies from the current quote universe.
+	currencySet := make(map[string]struct{})
+	for _, q := range quotes {
+		currency := strings.ToUpper(strings.TrimSpace(q.Currency))
+		if currency == "" || currency == "USD" {
+			continue
+		}
+		currencySet[currency] = struct{}{}
+	}
+
+	if len(currencySet) > 0 {
+		currencies := make([]string, 0, len(currencySet))
+		for currency := range currencySet {
+			currencies = append(currencies, currency)
+		}
+		if err := s.svc.PrewarmUSDRates(ctx, currencies); err != nil {
+			log.Printf("scheduler: pre-warm USD rates: %v", err)
+			// Continue anyway — per-user computations will retry.
+		}
+	}
+
+	// 3. Notify each active user (balance reads from cache → instant).
 	users, err := repo.GetAllActiveUsers()
 	if err != nil {
 		log.Printf("scheduler: get active users: %v", err)
