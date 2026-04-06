@@ -248,7 +248,8 @@ func (yc *YahooClient) GetUSDRates(ctx context.Context, currencies []string) (ma
 	seen := make(map[string]struct{}, len(currencies))
 
 	for _, code := range currencies {
-		currency := strings.ToUpper(strings.TrimSpace(code))
+		currency, _ := normalizeYahooCurrency(strings.TrimSpace(code))
+		currency = strings.ToUpper(currency)
 		if currency == "" {
 			return nil, fmt.Errorf("currency code cannot be empty")
 		}
@@ -399,18 +400,14 @@ func parseChartResponse(body []byte, symbol string) (Quote, error) {
 	}
 
 	meta := payload.Chart.Result[0].Meta
-	currency := strings.TrimSpace(meta.Currency)
-	isGBPSubunit := currency == "GBp" || strings.EqualFold(currency, "GBX")
-	if isGBPSubunit {
-		currency = "GBP"
-	}
+	currency, subunitDivisor := normalizeYahooCurrency(meta.Currency)
 
 	price := meta.RegularMarketPrice
 	if price == 0 {
 		price = meta.ChartPreviousClose // fallback for closed markets
 	}
-	if isGBPSubunit {
-		price = price / 100
+	if subunitDivisor > 0 && subunitDivisor != 1 {
+		price = price / subunitDivisor
 	}
 	if price == 0 {
 		return Quote{}, fmt.Errorf("no price data for %s", symbol)
@@ -421,6 +418,31 @@ func parseChartResponse(body []byte, symbol string) (Quote, error) {
 		Price:    price,
 		Currency: currency,
 	}, nil
+}
+
+// normalizeYahooCurrency maps Yahoo-specific currency codes to canonical ISO-like codes
+// and returns a divisor for subunit currencies.
+func normalizeYahooCurrency(raw string) (string, float64) {
+	currency := strings.TrimSpace(raw)
+	if currency == "" {
+		return "", 1
+	}
+
+	upper := strings.ToUpper(currency)
+	if currency == "GBp" || strings.EqualFold(currency, "GBX") {
+		return "GBP", 100
+	}
+
+	switch upper {
+	case "ILA":
+		// Legacy agorot-like Yahoo code: 100 agorot = 1 ILS.
+		return "ILS", 100
+	case "RUR":
+		// Legacy Russian ruble alias.
+		return "RUB", 1
+	default:
+		return upper, 1
+	}
 }
 
 func isAuthError(err error) bool {
