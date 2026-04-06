@@ -28,7 +28,11 @@
 !.devcontainer/
 !.devcontainer/*.json
 
+!AGENTS.md
 
 !.editorconfig
 !mise.toml
 !Makefile
+
+!example/
+!example/*.md
