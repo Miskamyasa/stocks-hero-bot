@@ -399,9 +399,18 @@ func parseChartResponse(body []byte, symbol string) (Quote, error) {
 	}
 
 	meta := payload.Chart.Result[0].Meta
+	currency := strings.TrimSpace(meta.Currency)
+	isGBPSubunit := currency == "GBp" || strings.EqualFold(currency, "GBX")
+	if isGBPSubunit {
+		currency = "GBP"
+	}
+
 	price := meta.RegularMarketPrice
 	if price == 0 {
 		price = meta.ChartPreviousClose // fallback for closed markets
+	}
+	if isGBPSubunit {
+		price = price / 100
 	}
 	if price == 0 {
 		return Quote{}, fmt.Errorf("no price data for %s", symbol)
@@ -410,7 +419,7 @@ func parseChartResponse(body []byte, symbol string) (Quote, error) {
 	return Quote{
 		Symbol:   meta.Symbol,
 		Price:    price,
-		Currency: meta.Currency,
+		Currency: currency,
 	}, nil
 }
 
