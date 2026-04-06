@@ -280,10 +280,35 @@ func (h *Handler) handleSharesInput(ctx context.Context, chatID int64, text, sta
 		log.Printf("reset user state %d: %v", chatID, err)
 	}
 
-	h.sendText(chatID, fmt.Sprintf(
-		"✅ Saved: %.4f shares of %s (%s).\n\nSend another ticker to add more, or /b to see your balance.",
-		shares, pending.Symbol, pending.Name,
-	))
+	// Reset baseline to ensure next scheduler report only shows performance changes.
+	report, prevTotal, err := h.svc.ResetBaseline(ctx, chatID)
+	if err != nil {
+		log.Printf("reset baseline %d: %v", chatID, err)
+		h.sendText(chatID, fmt.Sprintf(
+			"✅ Saved: %.4f shares of %s (%s).\n\n(Could not compute balance. Use /b to check later.)",
+			shares, pending.Symbol, pending.Name,
+		))
+		return
+	}
+
+	// Build confirmation message with balance and change info.
+	msg := fmt.Sprintf(
+		"✅ Saved: %.4f shares of %s (%s).\n\n💰 *Total: $%.2f*",
+		shares, pending.Symbol, pending.Name, report.TotalUSD,
+	)
+
+	if prevTotal > 0 {
+		change := (report.TotalUSD - prevTotal) / prevTotal * 100
+		sign := "+"
+		if change < 0 {
+			sign = ""
+		}
+		msg += fmt.Sprintf("\n📈 *Change from previous: %s%.2f%%*", sign, change)
+	}
+
+	msg += "\n\nSend another ticker to add more, or /b to see your balance."
+
+	h.sendMarkdown(chatID, msg)
 }
 
 func (h *Handler) handleRemove(ctx context.Context, chatID int64, symbol string) {

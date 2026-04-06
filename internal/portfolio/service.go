@@ -228,6 +228,32 @@ func (s *Service) ComputeBalance(ctx context.Context, chatID int64) (*BalanceRep
 	return report, nil
 }
 
+// ResetBaseline computes the current portfolio balance, saves it as a new baseline
+// for future performance comparisons, and returns the report along with the previous
+// baseline value. This should be called after portfolio composition changes (adding/removing stocks)
+// to ensure subsequent scheduler reports only reflect true performance changes.
+// Returns (nil, 0, nil) if the portfolio is empty.
+func (s *Service) ResetBaseline(ctx context.Context, chatID int64) (*BalanceReport, float64, error) {
+	report, err := s.ComputeBalance(ctx, chatID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("compute balance: %w", err)
+	}
+	if report == nil || len(report.Holdings) == 0 {
+		return nil, 0, nil
+	}
+
+	prevTotal, err := s.repo.GetLastReport(chatID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("get last report: %w", err)
+	}
+
+	if err := s.repo.SaveReport(chatID, report.TotalUSD); err != nil {
+		return nil, 0, fmt.Errorf("save report: %w", err)
+	}
+
+	return report, prevTotal, nil
+}
+
 // ConvertToUSD converts a value from the quote currency to USD.
 // usdRates map values are USD->currency conversions.
 func (s *Service) ConvertToUSD(value float64, currency string, usdRates map[string]float64) (float64, bool) {
